@@ -253,6 +253,81 @@
       .identity-flag.verified { border-color: rgba(34, 197, 94, 0.4); color: #86efac; }
       .identity-flag.needs { border-color: rgba(245, 158, 11, 0.4); color: #fcd34d; }
       .identity-flag.missing { opacity: 0.7; }
+      .call-flags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin: 0.55rem 0 0.35rem;
+      }
+      .call-flag {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.22rem 0.55rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(15, 23, 42, 0.65);
+      }
+      .call-flag.high { border-color: rgba(248, 113, 113, 0.55); color: #fca5a5; background: rgba(127, 29, 29, 0.25); }
+      .call-flag.medium { border-color: rgba(245, 158, 11, 0.55); color: #fcd34d; background: rgba(120, 53, 15, 0.25); }
+      .call-flag.low { border-color: rgba(148, 163, 184, 0.45); color: #cbd5e1; }
+      .intel-brief {
+        margin: 0.55rem 0 0;
+        font-size: 0.88rem;
+        line-height: 1.45;
+        color: #e2e8f0;
+      }
+      .intel-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.45rem;
+        margin-top: 0.65rem;
+      }
+      .intel-chip {
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.45rem 0.55rem;
+        font-size: 0.8rem;
+      }
+      .intel-chip span {
+        display: block;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin-bottom: 0.12rem;
+      }
+      .intel-chip strong { color: #f8fafc; font-weight: 600; }
+      .intel-chip.hot strong { color: #fca5a5; }
+      .intel-chip.warm strong { color: #fcd34d; }
+      .intel-wrap {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 58, 95, 0.85) 100%);
+        border: 1px solid #475569;
+        border-left: 4px solid #38bdf8;
+        border-radius: 10px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 0.5rem;
+      }
+      .flag-alerts { display: grid; gap: 0.45rem; margin-top: 0.65rem; }
+      .flag-alert {
+        border-radius: 8px;
+        padding: 0.55rem 0.7rem;
+        font-size: 0.84rem;
+        line-height: 1.45;
+        border: 1px solid var(--border);
+        background: rgba(15, 23, 42, 0.55);
+      }
+      .flag-alert.high { border-color: rgba(248, 113, 113, 0.45); background: rgba(127, 29, 29, 0.18); }
+      .flag-alert.medium { border-color: rgba(245, 158, 11, 0.45); background: rgba(120, 53, 15, 0.18); }
+      .flag-alert strong { display: block; margin-bottom: 0.15rem; }
+      .loan-details-section-title {
+        grid-column: 1 / -1;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-top: 0.35rem;
+      }
       .transcript-admin-note {
         font-size: 0.78rem;
         color: #fcd34d;
@@ -910,6 +985,121 @@
         return fields.map((row) => `${row.field}: ${row.value}`).join('\n');
       }
 
+      function formatCallIntelligenceText(intel) {
+        if (!intel || typeof intel !== 'object') return '';
+        const rows = [
+          ['Lead temperature', intel.lead_temperature],
+          ['Loan type', intel.loan_type],
+          ['Transaction', intel.transaction_type],
+          ['Timeline', intel.timeline],
+          ['Property state', intel.property_state],
+          ['Property type', intel.property_type],
+          ['Income type', intel.income_type],
+          ['Credit discussed', intel.credit_discussed],
+          ['Realtor involved', intel.realtor_involved],
+          ['Realtor', intel.realtor_name],
+          ['Competitor mentioned', intel.competitor_mentioned],
+          ['Competitors', intel.competitor_names],
+          ['Main objections', intel.main_objections],
+          ['Rate/payment discussed', intel.rate_payment_discussed],
+          ['Rate/payment summary', intel.rate_payment_summary],
+          ['Documents promised', intel.documents_promised],
+          ['Follow-up promised', intel.follow_up_promised],
+          ['Follow-up details', intel.follow_up_details],
+          ['Appointment set', intel.appointment_set],
+          ['Appointment details', intel.appointment_details],
+          ['Next action', intel.next_action],
+          ['Compliance concerns', intel.compliance_concerns],
+          ['LO coaching opportunities', intel.lo_coaching_opportunities],
+          ['Quick brief', intel.quick_brief],
+        ].filter(([, v]) => String(v ?? '').trim());
+        return rows.map(([k, v]) => `${k}: ${String(v).trim()}`).join('\n');
+      }
+
+      function formatAutoFlagsText(flags) {
+        if (!flags?.length) return '';
+        return flags.map((f) => `[${String(f.severity || 'medium').toUpperCase()}] ${f.title}\n${f.detail || ''}`).join('\n\n');
+      }
+
+      function renderCallFlagBadges(flags) {
+        if (!flags?.length) return '';
+        return `<div class="call-flags">${flags
+          .slice(0, 4)
+          .map(
+            (f) =>
+              `<span class="call-flag ${esc(String(f.severity || 'medium').toLowerCase())}" title="${esc(f.detail || f.title)}">${esc(f.title)}</span>`,
+          )
+          .join('')}${flags.length > 4 ? `<span class="call-flag low">+${flags.length - 4} more</span>` : ''}</div>`;
+      }
+
+      function renderAutoFlags(flags, copyId = 'auto-flags') {
+        if (!flags?.length) return '';
+        const text = formatAutoFlagsText(flags);
+        const body = flags
+          .map(
+            (f) =>
+              `<div class="flag-alert ${esc(String(f.severity || 'medium').toLowerCase())}"><strong>${esc(f.title)}</strong>${esc(f.detail || '')}</div>`,
+          )
+          .join('');
+        return `<section class="copy-section">
+          ${renderPanelCopyHead('AI flags · needs attention', text, copyId)}
+          <div class="flag-alerts">${body}</div>
+        </section>`;
+      }
+
+      function renderCallIntelligence(intel, copyId = 'call-intel') {
+        if (!intel || typeof intel !== 'object') return '';
+        const brief = String(intel.quick_brief ?? '').trim();
+        const chips = [
+          ['Temperature', intel.lead_temperature, /hot/i.test(intel.lead_temperature) ? 'hot' : /warm/i.test(intel.lead_temperature) ? 'warm' : ''],
+          ['Loan type', intel.loan_type],
+          ['Purpose', intel.transaction_type],
+          ['Timeline', intel.timeline],
+          ['State', intel.property_state],
+          ['Property', intel.property_type],
+          ['Income', intel.income_type],
+          ['Credit', intel.credit_discussed],
+          ['Realtor', intel.realtor_involved === 'yes' ? intel.realtor_name || 'Yes' : intel.realtor_involved],
+          ['Competitor', intel.competitor_names || intel.competitor_mentioned],
+          ['Appointment', intel.appointment_set === 'yes' ? intel.appointment_details || 'Yes' : intel.appointment_set],
+          ['Next action', intel.next_action],
+        ].filter(([, v]) => String(v ?? '').trim());
+
+        const chipHtml = chips.length
+          ? `<div class="intel-grid">${chips
+              .map(
+                ([label, value, cls]) =>
+                  `<div class="intel-chip ${cls || ''}"><span>${esc(label)}</span><strong>${esc(String(value).trim())}</strong></div>`,
+              )
+              .join('')}</div>`
+          : '';
+
+        const extras = [
+          ['Objections', intel.main_objections],
+          ['Rate / payment', intel.rate_payment_summary || intel.rate_payment_discussed],
+          ['Documents promised', intel.documents_promised],
+          ['Follow-up', intel.follow_up_details || intel.follow_up_promised],
+          ['Compliance', intel.compliance_concerns],
+          ['Coaching', intel.lo_coaching_opportunities],
+        ]
+          .filter(([, v]) => String(v ?? '').trim())
+          .map(
+            ([title, content]) =>
+              `<div class="qr-analysis-section"><h4>${esc(title)}</h4><p>${esc(String(content).trim())}</p></div>`,
+          )
+          .join('');
+
+        const text = formatCallIntelligenceText(intel);
+        if (!brief && !chipHtml && !extras) return '';
+
+        return `<section class="copy-section intel-wrap">
+          ${renderPanelCopyHead('Call intelligence · quick look', text, copyId)}
+          ${brief ? `<p class="intel-brief">${esc(brief)}</p>` : ''}
+          ${chipHtml}
+          ${extras ? `<div class="qr-analysis" style="margin-top:0.75rem;border:none;padding:0;background:transparent">${extras}</div>` : ''}
+        </section>`;
+      }
+
       function formatQuestRockAnalysisText(analysis) {
         if (!analysis || typeof analysis !== 'object') return '';
         const sections = [
@@ -981,12 +1171,14 @@
       function renderBorrowerLoanDetails(analysis) {
         const details = analysis?.borrower_loan_details;
         if (!details || typeof details !== 'object') return '';
-        const rows = [
+        const profileRows = [
           ['Mortgage balance', details.mortgage_balance],
           ['Property value', details.property_value],
           ['Interest rate', details.interest_rate],
           ['Term', details.loan_term],
           ['Years left', details.years_remaining],
+        ].filter(([, v]) => String(v ?? '').trim());
+        const escrowRows = [
           ['PMI', details.pmi],
           ['Homeowners insurance', details.homeowners_insurance],
           ['HOI period', details.hoi_period],
@@ -995,13 +1187,31 @@
           ['Flood insurance', details.flood_insurance],
           ['Flood period', details.flood_period],
         ].filter(([, v]) => String(v ?? '').trim());
-        if (!rows.length) return '';
-        const body = rows
-          .map(([label, value]) => `<div><span>${esc(label)}</span>${esc(String(value).trim())}</div>`)
-          .join('');
+        const paymentRows = [
+          ['Total monthly payment', details.monthly_payment_total],
+          ['Principal & interest', details.principal_and_interest],
+          ['Property taxes', details.property_taxes],
+          ['Insurance (in payment)', details.payment_homeowners_insurance],
+          ['HOA', details.hoa],
+          ['PMI (in payment)', details.payment_pmi],
+          ['Breakdown notes', details.payment_breakdown_notes],
+        ].filter(([, v]) => String(v ?? '').trim());
+
+        if (!profileRows.length && !escrowRows.length && !paymentRows.length) return '';
+
+        function gridRows(rows) {
+          return rows
+            .map(([label, value]) => `<div><span>${esc(label)}</span>${esc(String(value).trim())}</div>`)
+            .join('');
+        }
+
         return `<section class="copy-section loan-details-wrap">
           <h3>Borrower&apos;s loan details</h3>
-          <div class="loan-details-grid">${body}</div>
+          <div class="loan-details-grid">
+            ${profileRows.length ? gridRows(profileRows) : ''}
+            ${paymentRows.length ? `<div class="loan-details-section-title">Payment breakdown</div>${gridRows(paymentRows)}` : ''}
+            ${escrowRows.length && !paymentRows.length ? gridRows(escrowRows) : ''}
+          </div>
         </section>`;
       }
 
@@ -1211,6 +1421,10 @@
         const parts = [];
         const dr = formatDealReviewText(c.deal_review);
         if (dr) parts.push(`--- Deal Review ---\n${dr}`);
+        const intel = formatCallIntelligenceText(c.call_intelligence);
+        if (intel) parts.push(`--- Call Intelligence ---\n${intel}`);
+        const flags = formatAutoFlagsText(c.auto_flags);
+        if (flags) parts.push(`--- AI Flags ---\n${flags}`);
         const qr = formatQuestRockAnalysisText(c.questrock_analysis);
         if (qr) parts.push(`--- QuestRock AI Analysis ---\n${qr}`);
         if (c.ai_status_label) parts.push(`Status: ${c.ai_status_label}`);
@@ -1395,6 +1609,10 @@
         const loDispositionSection = renderLoDispositionBlock(c);
         const copyPrefix = `copy-${c.call_id}`;
         const identityFlags = renderPrivateIdentityFlags(c.private_identity);
+        const callIntelPanel = renderCallIntelligence(c.call_intelligence, `${copyPrefix}-intel`);
+        const autoFlagsPanel = renderAutoFlags(c.auto_flags, `${copyPrefix}-flags`);
+        const callFlagBadges = renderCallFlagBadges(c.auto_flags);
+        const intelBrief = String(c.call_intelligence?.quick_brief ?? '').trim();
         const dealReviewPanel = renderDealReview(c.deal_review, `${copyPrefix}-dr`);
         const dealReviewSync = c.deal_review_sync ? renderShapeSync(c.deal_review_sync) : '';
         const questRockAnalysis = renderQuestRockAnalysis(c.questrock_analysis, `${copyPrefix}-qr`);
@@ -1504,6 +1722,8 @@
               ${loDispositionBadge}
               <h2>${esc(c.borrower_name)} <span class="chevron">${isOpen ? '▾' : '▸'}</span></h2>
               <div class="phone">${esc(c.phone || 'No phone')}</div>
+              ${callFlagBadges}
+              ${intelBrief ? `<p class="intel-brief">${esc(intelBrief)}</p>` : ''}
               ${renderCallMetaBar(c)}
               ${renderCallActionRow(c)}
               <div class="details">
@@ -1518,6 +1738,8 @@
             ${renderManagePanel(c)}
             ${mailerLinkBlock}
             ${copyActions}
+            ${autoFlagsPanel}
+            ${callIntelPanel}
             ${loDispositionSection}
             ${identityFlags}
             ${dealReviewPanel}
