@@ -415,6 +415,10 @@
         border-radius: 6px;
         cursor: pointer;
       }
+      button.copy-btn.shape-copy {
+        border-color: rgba(251, 113, 133, 0.55);
+        color: #fda4af;
+      }
       button.copy-btn:hover {
         color: var(--ink);
         border-color: #64748b;
@@ -1417,6 +1421,16 @@
         </section>`;
       }
 
+      function buildShapePasteText(c) {
+        const parts = [];
+        if (c.ai_status_label) parts.push(`QuestRock AI status: ${c.ai_status_label}`);
+        if (c.call_summary) parts.push(c.call_summary);
+        const coaching = formatRayCoachingText(c.ray_coaching) || c.sales_notes;
+        if (coaching) parts.push(coaching);
+        if (c.ops_notes) parts.push(c.ops_notes);
+        return parts.join('\n\n').trim();
+      }
+
       function buildAiReviewText(c) {
         const parts = [];
         const dr = formatDealReviewText(c.deal_review);
@@ -1626,15 +1640,18 @@
         const ops = copySection('Ops notes', c.ops_notes);
 
         const aiReviewText = buildAiReviewText(c);
+        const shapePasteText = buildShapePasteText(c);
         const fullCallText = buildFullCallText(c);
         const hiddenCopySources = [
           hiddenCopySource(`${copyPrefix}-ai`, aiReviewText),
+          hiddenCopySource(`${copyPrefix}-shape`, shapePasteText),
           hiddenCopySource(`${copyPrefix}-transcript`, c.transcript_text),
           hiddenCopySource(`${copyPrefix}-all`, fullCallText),
         ].join('');
         const copyActions =
-          c.transcript_text || aiReviewText
+          c.transcript_text || aiReviewText || shapePasteText
             ? `<div class="copy-actions">
+                ${shapePasteText ? `<button type="button" class="copy-btn shape-copy" data-copy-source="${copyPrefix}-shape">Copy for Shape</button>` : ''}
                 ${aiReviewText ? `<button type="button" class="copy-btn" data-copy-source="${copyPrefix}-ai">Copy QuestRock AI</button>` : ''}
                 ${c.transcript_text ? `<button type="button" class="copy-btn" data-copy-source="${copyPrefix}-transcript">Copy transcript</button>` : ''}
                 ${fullCallText ? `<button type="button" class="copy-btn" data-copy-source="${copyPrefix}-all">Copy all</button>` : ''}

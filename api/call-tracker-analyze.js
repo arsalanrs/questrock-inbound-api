@@ -2,6 +2,7 @@ import { getSupabaseClient } from '../lib/supabase.js';
 import { assertInboundSession } from '../lib/request-auth.js';
 import { readJsonBody, sendJson } from '../lib/http.js';
 import { analyzeCallTranscript } from '../lib/call-tracker/analyze-call.js';
+import { CALL_EVALUATION_SCHEMA_VERSION } from '../lib/ai/evaluate-call.js';
 
 /**
  * POST /api/call-tracker-analyze — run AI summary, coaching, status, and Shape sync.
@@ -23,6 +24,7 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { ok: false, error: 'call_id is required.' });
     }
 
+    console.info('[call-tracker-analyze] schema', CALL_EVALUATION_SCHEMA_VERSION);
     const result = await analyzeCallTranscript(getSupabaseClient(), callId);
     return sendJson(res, 200, result);
   } catch (error) {

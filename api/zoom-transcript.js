@@ -12,6 +12,7 @@ import {
   isZoomRecordingPayload,
   runTranscriptIngestPipeline,
 } from '../lib/transcript-ingest-pipeline.js';
+import { CALL_EVALUATION_SCHEMA_VERSION } from '../lib/ai/evaluate-call.js';
 
 function parseTranscriptPayload(body) {
   const normalized = normalizePayload(body);
@@ -102,6 +103,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.info('[zoom-transcript] schema', CALL_EVALUATION_SCHEMA_VERSION);
     const body = readJsonBody(req);
 
     const challenge = handleZoomWebhookChallenge(body, req);
